@@ -36,7 +36,7 @@ public class MainLoop implements Runnable  {
     synchronized public void doWork() {
 	System.out.println("Main loop do work start");
 	this.has_work = false;
-	while (this.has_work == false) {
+	while (!this.has_work) {
 	    System.out.println("Main loop do work: waiting");
 	    try {
 		wait ();

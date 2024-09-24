@@ -1,4 +1,7 @@
 .idea
 contract/pom.xml
 *.DS_Store
-**/target/
+*.class
+*.proto
+*.lst
+*.jar

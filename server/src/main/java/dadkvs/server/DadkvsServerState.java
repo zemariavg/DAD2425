@@ -42,7 +42,7 @@ public class DadkvsServerState {
         largest_prepare_ts = 0;
         majority_responses = n_servers / 2 + 1;
         leader_ts = myself;
-        current_value = 1;
+        current_value = 0;
 
         store_size = kv_size;
         store = new KeyValueStore(kv_size);
@@ -60,9 +60,10 @@ public class DadkvsServerState {
 
     }
 
-    public synchronized void runPaxos(){
+    public synchronized int runPaxos(){
         boolean reached_consensus = false;
         if(i_am_leader){
+            current_value++;
             List<DadkvsPaxos.PhaseOneReply> phase_one_responses = new ArrayList<>();
             GenericResponseCollector<DadkvsPaxos.PhaseOneReply> phase_one_collector = new GenericResponseCollector<>(phase_one_responses, n_servers);
             List<DadkvsPaxos.PhaseTwoReply> phase_two_responses = new ArrayList<>();
@@ -97,6 +98,7 @@ public class DadkvsServerState {
                     updateLeaderTimestamp();
                 }
             }
+            return current_value;
         }
     }
 

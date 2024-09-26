@@ -7,9 +7,7 @@ import dadkvs.util.GenericResponseCollector;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class DadkvsServerState {
     boolean i_am_leader;
@@ -21,8 +19,12 @@ public class DadkvsServerState {
     int largest_prepare_ts;
     int largest_accept_ts;
     int majority_responses;
-    int current_value;
+    int transaction_ts;
     int leader_ts;
+    int accepted_reqid;
+    private boolean paxos_ongoing;
+    private final HashMap<Integer, TransactionRecord> pending_transaction_commits;
+    private final List<Integer> transaction_execution_log;
 
     String default_host;
     KeyValueStore store;
@@ -42,7 +44,10 @@ public class DadkvsServerState {
         largest_prepare_ts = 0;
         majority_responses = n_servers / 2 + 1;
         leader_ts = myself;
-        current_value = 0;
+        transaction_ts = 0;
+        paxos_ongoing = false;
+        pending_transaction_commits = new LinkedHashMap<>();
+        transaction_execution_log = new ArrayList<>();
 
         store_size = kv_size;
         store = new KeyValueStore(kv_size);
@@ -60,45 +65,56 @@ public class DadkvsServerState {
 
     }
 
-    public synchronized int runPaxos(){
-        boolean reached_consensus = false;
+    public synchronized void runPaxos(){
         if(i_am_leader){
-            current_value++;
-            List<DadkvsPaxos.PhaseOneReply> phase_one_responses = new ArrayList<>();
-            GenericResponseCollector<DadkvsPaxos.PhaseOneReply> phase_one_collector = new GenericResponseCollector<>(phase_one_responses, n_servers);
-            List<DadkvsPaxos.PhaseTwoReply> phase_two_responses = new ArrayList<>();
-            GenericResponseCollector<DadkvsPaxos.PhaseTwoReply> phase_two_collector = new GenericResponseCollector<>(phase_two_responses, n_servers);
-            primaryLoop:
-            while(!reached_consensus) {
-                runPhase1(phase_one_collector, buildPhaseOneRequest(leader_ts));
-                phase_one_collector.waitForTarget(majority_responses);
-                for (DadkvsPaxos.PhaseOneReply response : phase_one_responses) {
-                    if (!response.getPhase1Accepted()) {
-                        updateLeaderTimestamp(response.getPhase1Timestamp());
+            paxos_ongoing = true;
+            runAsLeader();
+        } else {
+            while(paxos_ongoing){
+                try {
+                    wait();
+                } catch(InterruptedException e){
+                    // TODO
+                }
+            }
+        }
+    }
+
+    private void runAsLeader(){
+        List<DadkvsPaxos.PhaseOneReply> phase_one_responses = new ArrayList<>();
+        GenericResponseCollector<DadkvsPaxos.PhaseOneReply> phase_one_collector = new GenericResponseCollector<>(phase_one_responses, n_servers);
+        List<DadkvsPaxos.PhaseTwoReply> phase_two_responses = new ArrayList<>();
+        GenericResponseCollector<DadkvsPaxos.PhaseTwoReply> phase_two_collector = new GenericResponseCollector<>(phase_two_responses, n_servers);
+        primaryLoop:
+        while(paxos_ongoing) {
+            runPhase1(phase_one_collector, buildPhaseOneRequest(leader_ts));
+            phase_one_collector.waitForTarget(majority_responses);
+            for (DadkvsPaxos.PhaseOneReply response : phase_one_responses) {
+                if (!response.getPhase1Accepted()) {
+                    updateLeaderTimestamp(response.getPhase1Timestamp());
+                    continue primaryLoop;
+                }
+            }
+            if(phase_one_responses.size() >= majority_responses){
+                int chosen_value = pickValue(phase_one_responses);
+                runPhase2(phase_two_collector, buildPhaseTwoRequest(chosen_value, leader_ts));
+                phase_two_collector.waitForTarget(majority_responses);
+                for (DadkvsPaxos.PhaseTwoReply response : phase_two_responses) {
+                    if (!response.getPhase2Accepted()) {
+                        updateLeaderTimestamp();
                         continue primaryLoop;
                     }
                 }
-                if(phase_one_responses.size() >= majority_responses){
-                    int chosen_value = pickValue(phase_one_responses);
-                    runPhase2(phase_two_collector, buildPhaseTwoRequest(chosen_value, leader_ts));
-                    phase_two_collector.waitForTarget(majority_responses);
-                    for (DadkvsPaxos.PhaseTwoReply response : phase_two_responses) {
-                        if (!response.getPhase2Accepted()) {
-                            updateLeaderTimestamp();
-                            continue primaryLoop;
-                        }
-                    }
-                    if(phase_two_responses.size() >= majority_responses) {
-                        reached_consensus = true;
-                        //TODO: broadcast to learners ?
-                    } else {
-                        updateLeaderTimestamp();
-                    }
+                if(phase_two_responses.size() >= majority_responses) {
+                    paxos_ongoing = false;
+                    notifyAll();
+                    //TODO: broadcast to learners ?
                 } else {
                     updateLeaderTimestamp();
                 }
+            } else {
+                updateLeaderTimestamp();
             }
-            return current_value;
         }
     }
 
@@ -130,6 +146,14 @@ public class DadkvsServerState {
         leader_ts += n_servers;
     }
 
+    public void addTransactionRecord(Integer reqid, TransactionRecord transactionRecord){
+        pending_transaction_commits.put(reqid, transactionRecord);
+    }
+
+    private int getReqId(){
+        return pending_transaction_commits.keySet().iterator().next();
+    }
+
     private void runPhase1(GenericResponseCollector<DadkvsPaxos.PhaseOneReply> phase_one_collector, DadkvsPaxos.PhaseOneRequest request){
         for(DadkvsPaxosServiceGrpc.DadkvsPaxosServiceStub stub : async_paxos_stubs){
             CollectorStreamObserver<DadkvsPaxos.PhaseOneReply> phase_one_observer = new CollectorStreamObserver<>(phase_one_collector);
@@ -148,7 +172,7 @@ public class DadkvsServerState {
         // Retrieving the response with the largest accepted timestamp
         DadkvsPaxos.PhaseOneReply largest_accept_response = responses.stream()
                 .max(Comparator.comparingInt(DadkvsPaxos.PhaseOneReply::getPhase1Timestamp)).get();
-        return largest_accept_response.getPhase1Value() > 0 ? largest_accept_response.getPhase1Value() : current_value;
+        return largest_accept_response.getPhase1Value() > 0 ? largest_accept_response.getPhase1Value() : getReqId();
     }
 
     private void initPaxosStubs() {

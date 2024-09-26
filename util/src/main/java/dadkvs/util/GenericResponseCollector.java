@@ -9,7 +9,7 @@ public class GenericResponseCollector<T> {
     int pending;
     boolean target_reached;
 
-    public GenericResponseCollector(List<T> responses, int maxresponses) {
+    public GenericResponseCollector(    List<T> responses, int maxresponses) {
         collected_responses = responses;
         received = 0;
         pending = maxresponses;

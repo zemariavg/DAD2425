@@ -53,8 +53,7 @@ public class DadkvsMainServiceImpl extends DadkvsMainServiceGrpc.DadkvsMainServi
 
         TransactionRecord txrecord = new TransactionRecord(key1, version1, key2, version2, writekey, writeval, this.timestamp);
         server_state.addTransactionRecord(reqid, txrecord);
-        this.server_state.runPaxos();
-        boolean result = this.server_state.store.commit(txrecord);
+        boolean result = server_state.waitForTransactionExecution(reqid);
 
 
         // for debug purposes

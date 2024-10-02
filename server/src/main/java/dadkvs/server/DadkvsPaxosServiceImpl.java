@@ -57,6 +57,7 @@ public class DadkvsPaxosServiceImpl extends DadkvsPaxosServiceGrpc.DadkvsPaxosSe
             phase_two_response
                     .setPhase2Accepted(false)
                     .setPhase2Index(server_state.current_index)
+                    .setPhase2Timestamp(server_state.largest_accept_ts)
                     .setInvalidValue(server_state.checkTransactionProcessed(request.getPhase2Value()));
         } else {
             phase_two_response.setPhase2Accepted(true);

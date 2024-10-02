@@ -192,7 +192,7 @@ public class DadkvsServerState {
 
         boolean hasGreaterLeader = largestTimestamp > leader_ts;
         if (hasGreaterLeader) {
-
+            BackoffStrategy.randomSleep(5, 20);
             updateLeaderTimestamp(largestTimestamp);
         } else if (isIndexUpdated) {
             updateLeaderTimestamp();
@@ -212,6 +212,7 @@ public class DadkvsServerState {
         }
         boolean hasGreaterLeader = largestTimestamp > leader_ts;
         if (hasGreaterLeader) {
+            BackoffStrategy.randomSleep(5, 20);
             updateLeaderTimestamp(largestTimestamp);
         }
         return hasGreaterLeader;

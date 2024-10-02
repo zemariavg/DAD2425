@@ -29,6 +29,8 @@ message PhaseTwoReply {
   int32 phase2config   = 1;
   int32 phase2index    = 2;
   bool  phase2accepted = 3;
+  int32 phase2timestamp = 4;
+  bool  invalidValue = 5;
 }
 
 message LearnRequest {

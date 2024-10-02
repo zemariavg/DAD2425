@@ -2130,6 +2130,18 @@ public final class DadkvsPaxos {
      * @return The phase2accepted.
      */
     boolean getPhase2Accepted();
+
+    /**
+     * <code>int32 phase2timestamp = 4;</code>
+     * @return The phase2timestamp.
+     */
+    int getPhase2Timestamp();
+
+    /**
+     * <code>bool invalidValue = 5;</code>
+     * @return The invalidValue.
+     */
+    boolean getInvalidValue();
   }
   /**
    * Protobuf type {@code dadkvs.PhaseTwoReply}
@@ -2189,6 +2201,16 @@ public final class DadkvsPaxos {
             case 24: {
 
               phase2Accepted_ = input.readBool();
+              break;
+            }
+            case 32: {
+
+              phase2Timestamp_ = input.readInt32();
+              break;
+            }
+            case 40: {
+
+              invalidValue_ = input.readBool();
               break;
             }
             default: {
@@ -2256,6 +2278,28 @@ public final class DadkvsPaxos {
       return phase2Accepted_;
     }
 
+    public static final int PHASE2TIMESTAMP_FIELD_NUMBER = 4;
+    private int phase2Timestamp_;
+    /**
+     * <code>int32 phase2timestamp = 4;</code>
+     * @return The phase2timestamp.
+     */
+    @java.lang.Override
+    public int getPhase2Timestamp() {
+      return phase2Timestamp_;
+    }
+
+    public static final int INVALIDVALUE_FIELD_NUMBER = 5;
+    private boolean invalidValue_;
+    /**
+     * <code>bool invalidValue = 5;</code>
+     * @return The invalidValue.
+     */
+    @java.lang.Override
+    public boolean getInvalidValue() {
+      return invalidValue_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -2279,6 +2323,12 @@ public final class DadkvsPaxos {
       if (phase2Accepted_ != false) {
         output.writeBool(3, phase2Accepted_);
       }
+      if (phase2Timestamp_ != 0) {
+        output.writeInt32(4, phase2Timestamp_);
+      }
+      if (invalidValue_ != false) {
+        output.writeBool(5, invalidValue_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -2299,6 +2349,14 @@ public final class DadkvsPaxos {
       if (phase2Accepted_ != false) {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(3, phase2Accepted_);
+      }
+      if (phase2Timestamp_ != 0) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(4, phase2Timestamp_);
+      }
+      if (invalidValue_ != false) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(5, invalidValue_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -2321,6 +2379,10 @@ public final class DadkvsPaxos {
           != other.getPhase2Index()) return false;
       if (getPhase2Accepted()
           != other.getPhase2Accepted()) return false;
+      if (getPhase2Timestamp()
+          != other.getPhase2Timestamp()) return false;
+      if (getInvalidValue()
+          != other.getInvalidValue()) return false;
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -2339,6 +2401,11 @@ public final class DadkvsPaxos {
       hash = (37 * hash) + PHASE2ACCEPTED_FIELD_NUMBER;
       hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
           getPhase2Accepted());
+      hash = (37 * hash) + PHASE2TIMESTAMP_FIELD_NUMBER;
+      hash = (53 * hash) + getPhase2Timestamp();
+      hash = (37 * hash) + INVALIDVALUE_FIELD_NUMBER;
+      hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
+          getInvalidValue());
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -2478,6 +2545,10 @@ public final class DadkvsPaxos {
 
         phase2Accepted_ = false;
 
+        phase2Timestamp_ = 0;
+
+        invalidValue_ = false;
+
         return this;
       }
 
@@ -2507,6 +2578,8 @@ public final class DadkvsPaxos {
         result.phase2Config_ = phase2Config_;
         result.phase2Index_ = phase2Index_;
         result.phase2Accepted_ = phase2Accepted_;
+        result.phase2Timestamp_ = phase2Timestamp_;
+        result.invalidValue_ = invalidValue_;
         onBuilt();
         return result;
       }
@@ -2563,6 +2636,12 @@ public final class DadkvsPaxos {
         }
         if (other.getPhase2Accepted() != false) {
           setPhase2Accepted(other.getPhase2Accepted());
+        }
+        if (other.getPhase2Timestamp() != 0) {
+          setPhase2Timestamp(other.getPhase2Timestamp());
+        }
+        if (other.getInvalidValue() != false) {
+          setInvalidValue(other.getInvalidValue());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -2682,6 +2761,68 @@ public final class DadkvsPaxos {
       public Builder clearPhase2Accepted() {
         
         phase2Accepted_ = false;
+        onChanged();
+        return this;
+      }
+
+      private int phase2Timestamp_ ;
+      /**
+       * <code>int32 phase2timestamp = 4;</code>
+       * @return The phase2timestamp.
+       */
+      @java.lang.Override
+      public int getPhase2Timestamp() {
+        return phase2Timestamp_;
+      }
+      /**
+       * <code>int32 phase2timestamp = 4;</code>
+       * @param value The phase2timestamp to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPhase2Timestamp(int value) {
+        
+        phase2Timestamp_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>int32 phase2timestamp = 4;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearPhase2Timestamp() {
+        
+        phase2Timestamp_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private boolean invalidValue_ ;
+      /**
+       * <code>bool invalidValue = 5;</code>
+       * @return The invalidValue.
+       */
+      @java.lang.Override
+      public boolean getInvalidValue() {
+        return invalidValue_;
+      }
+      /**
+       * <code>bool invalidValue = 5;</code>
+       * @param value The invalidValue to set.
+       * @return This builder for chaining.
+       */
+      public Builder setInvalidValue(boolean value) {
+        
+        invalidValue_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>bool invalidValue = 5;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearInvalidValue() {
+        
+        invalidValue_ = false;
         onChanged();
         return this;
       }
@@ -4112,19 +4253,20 @@ public final class DadkvsPaxos {
       "\023\n\013phase1value\030\004 \001(\005\022\027\n\017phase1timestamp\030" +
       "\005 \001(\005\"j\n\017PhaseTwoRequest\022\024\n\014phase2config" +
       "\030\001 \001(\005\022\023\n\013phase2index\030\002 \001(\005\022\023\n\013phase2val" +
-      "ue\030\003 \001(\005\022\027\n\017phase2timestamp\030\004 \001(\005\"R\n\rPha" +
-      "seTwoReply\022\024\n\014phase2config\030\001 \001(\005\022\023\n\013phas" +
-      "e2index\030\002 \001(\005\022\026\n\016phase2accepted\030\003 \001(\010\"c\n" +
-      "\014LearnRequest\022\023\n\013learnconfig\030\001 \001(\005\022\022\n\nle" +
-      "arnindex\030\002 \001(\005\022\022\n\nlearnvalue\030\003 \001(\005\022\026\n\016le" +
-      "arntimestamp\030\004 \001(\005\"L\n\nLearnReply\022\023\n\013lear" +
-      "nconfig\030\001 \001(\005\022\022\n\nlearnindex\030\002 \001(\005\022\025\n\rlea" +
-      "rnaccepted\030\003 \001(\0102\277\001\n\022DadkvsPaxosService\022" +
-      ":\n\010phaseone\022\027.dadkvs.PhaseOneRequest\032\025.d" +
-      "adkvs.PhaseOneReply\022:\n\010phasetwo\022\027.dadkvs" +
-      ".PhaseTwoRequest\032\025.dadkvs.PhaseTwoReply\022" +
-      "1\n\005learn\022\024.dadkvs.LearnRequest\032\022.dadkvs." +
-      "LearnReplyb\006proto3"
+      "ue\030\003 \001(\005\022\027\n\017phase2timestamp\030\004 \001(\005\"\201\001\n\rPh" +
+      "aseTwoReply\022\024\n\014phase2config\030\001 \001(\005\022\023\n\013pha" +
+      "se2index\030\002 \001(\005\022\026\n\016phase2accepted\030\003 \001(\010\022\027" +
+      "\n\017phase2timestamp\030\004 \001(\005\022\024\n\014invalidValue\030" +
+      "\005 \001(\010\"c\n\014LearnRequest\022\023\n\013learnconfig\030\001 \001" +
+      "(\005\022\022\n\nlearnindex\030\002 \001(\005\022\022\n\nlearnvalue\030\003 \001" +
+      "(\005\022\026\n\016learntimestamp\030\004 \001(\005\"L\n\nLearnReply" +
+      "\022\023\n\013learnconfig\030\001 \001(\005\022\022\n\nlearnindex\030\002 \001(" +
+      "\005\022\025\n\rlearnaccepted\030\003 \001(\0102\277\001\n\022DadkvsPaxos" +
+      "Service\022:\n\010phaseone\022\027.dadkvs.PhaseOneReq" +
+      "uest\032\025.dadkvs.PhaseOneReply\022:\n\010phasetwo\022" +
+      "\027.dadkvs.PhaseTwoRequest\032\025.dadkvs.PhaseT" +
+      "woReply\0221\n\005learn\022\024.dadkvs.LearnRequest\032\022" +
+      ".dadkvs.LearnReplyb\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -4153,7 +4295,7 @@ public final class DadkvsPaxos {
     internal_static_dadkvs_PhaseTwoReply_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_dadkvs_PhaseTwoReply_descriptor,
-        new java.lang.String[] { "Phase2Config", "Phase2Index", "Phase2Accepted", });
+        new java.lang.String[] { "Phase2Config", "Phase2Index", "Phase2Accepted", "Phase2Timestamp", "InvalidValue", });
     internal_static_dadkvs_LearnRequest_descriptor =
       getDescriptor().getMessageTypes().get(4);
     internal_static_dadkvs_LearnRequest_fieldAccessorTable = new

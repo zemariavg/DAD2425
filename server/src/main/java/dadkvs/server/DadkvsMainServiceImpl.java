@@ -4,14 +4,12 @@ package dadkvs.server;
 
 import dadkvs.DadkvsMain;
 import dadkvs.DadkvsMainServiceGrpc;
-import dadkvs.DadkvsPaxosServiceGrpc;
 import io.grpc.stub.StreamObserver;
+
 
 public class DadkvsMainServiceImpl extends DadkvsMainServiceGrpc.DadkvsMainServiceImplBase {
 
     DadkvsServerState server_state;
-
-    int timestamp;
 
 
     public DadkvsMainServiceImpl(DadkvsServerState state) {
@@ -50,19 +48,18 @@ public class DadkvsMainServiceImpl extends DadkvsMainServiceGrpc.DadkvsMainServi
         // for debug purposes
         System.out.println("reqid " + reqid + " key1 " + key1 + " v1 " + version1 + " k2 " + key2 + " v2 " + version2 + " wk " + writekey + " writeval " + writeval);
 
+        // Using the index as timestamp for write versioning
+        TransactionRecord txrecord = new TransactionRecord(key1, version1, key2, version2, writekey, writeval);
+        server_state.addTransactionRecordToQueue(reqid, txrecord);
+        server_state.waitForTransactionExecution(reqid).thenAccept((result) -> {
+            System.out.println("Result is ready for request with reqid " + reqid);
 
-        TransactionRecord txrecord = new TransactionRecord(key1, version1, key2, version2, writekey, writeval, this.timestamp);
-        server_state.addTransactionRecord(reqid, txrecord);
-        boolean result = server_state.waitForTransactionExecution(reqid);
+            DadkvsMain.CommitReply response = DadkvsMain.CommitReply.newBuilder()
+                    .setReqid(reqid).setAck(result).build();
 
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        });
 
-        // for debug purposes
-        System.out.println("Result is ready for request with reqid " + reqid);
-
-        DadkvsMain.CommitReply response = DadkvsMain.CommitReply.newBuilder()
-                .setReqid(reqid).setAck(result).build();
-
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
     }
 }

@@ -36,18 +36,42 @@ public class DadkvsConsoleServiceImpl extends DadkvsConsoleServiceGrpc.DadkvsCon
     }
 
     @Override
-    public void setdebug(DadkvsConsole.SetDebugRequest request, StreamObserver<DadkvsConsole.SetDebugReply> responseObserver) {
+    public synchronized void setdebug(DadkvsConsole.SetDebugRequest request, StreamObserver<DadkvsConsole.SetDebugReply> responseObserver) {
         // for debug purposes
         System.out.println(request);
 
         boolean response_value = true;
 
-        this.server_state.debug_mode = request.getMode();
-        //this.server_state.main_loop.wakeup();
+        int mode = request.getMode();  // Retrieve the debug mode from the request
+        this.server_state.debug_mode = mode;
+
+        // Implement behavior for each mode
+        switch (mode) {
+            case 1:
+                System.out.println("Server crashing...");
+                DadkvsConsole.SetDebugReply crashReply = DadkvsConsole.SetDebugReply.newBuilder().setAck(true).build();
+                responseObserver.onNext(crashReply);
+                responseObserver.onCompleted();
+                System.exit(0);  // Crashes the server
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+            case 4:
+                break;
+            case 5:
+                break;
+            default:
+                System.out.println("Invalid debug mode: " + mode);
+                response_value = false;
+                break;
+        }
 
         // for debug purposes
-        System.out.println("Setting debug mode to = " + this.server_state.debug_mode);
+        //System.out.println("Setting debug mode to = " + this.server_state.debug_mode);
 
+        // Respond to the client
         DadkvsConsole.SetDebugReply response = DadkvsConsole.SetDebugReply.newBuilder()
                 .setAck(response_value).build();
 

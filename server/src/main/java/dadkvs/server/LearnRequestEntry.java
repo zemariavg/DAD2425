@@ -18,4 +18,8 @@ public class LearnRequestEntry {
     public int increaseCount() {
         return ++count;
     }
+
+    public int getCount(){
+        return count;
+    }
 }

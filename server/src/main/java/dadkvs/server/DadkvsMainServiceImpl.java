@@ -20,7 +20,23 @@ public class DadkvsMainServiceImpl extends DadkvsMainServiceGrpc.DadkvsMainServi
     public void read(DadkvsMain.ReadRequest request, StreamObserver<DadkvsMain.ReadReply> responseObserver) {
         // for debug purposes
         System.out.println("Receiving read request:" + request);
-
+        switch (server_state.debug_mode) {
+            case 1:
+                System.out.println("Shutting down server");
+                System.exit(0);
+            case 2:
+                System.out.println("Server is frozen, not processing commit request.");
+                //TODO: Maybe just freeze()
+                return;
+            case 4:
+                try {
+                    long delay = (long) (Math.random() * 1000);  // Random delay up to 1 second
+                    Thread.sleep(delay);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                break;
+        }
         int reqid = request.getReqid();
         int key = request.getKey();
         VersionedValue vv = this.server_state.store.read(key);
@@ -53,7 +69,7 @@ public class DadkvsMainServiceImpl extends DadkvsMainServiceGrpc.DadkvsMainServi
         server_state.addTransactionRecordToQueue(reqid, txrecord);
         server_state.waitForTransactionExecution(reqid).thenAccept((result) -> {
             System.out.println("Result is ready for request with reqid " + reqid);
-
+            System.out.println("Log when responding: " + server_state.transaction_execution_log);
             DadkvsMain.CommitReply response = DadkvsMain.CommitReply.newBuilder()
                     .setReqid(reqid).setAck(result).build();
 

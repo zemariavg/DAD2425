@@ -20,16 +20,21 @@ public class DadkvsPaxosServiceImpl extends DadkvsPaxosServiceGrpc.DadkvsPaxosSe
     @Override
     public synchronized void phaseone(DadkvsPaxos.PhaseOneRequest request, StreamObserver<DadkvsPaxos.PhaseOneReply> responseObserver) {
         // for debug purposes
-        // TODO: Maybe synchronized
         System.out.println("Receive phase1 request: " + request);
         DadkvsPaxos.PhaseOneReply phase_one_response;
         if(request.getPhase1Timestamp() < server_state.largest_prepare_ts
-                || request.getPhase1Timestamp() < server_state.largest_accept_ts
-                || request.getPhase1Index() < server_state.current_index){
-            phase_one_response = build_phase_one_response(false, server_state.largest_prepare_ts, server_state.accepted_reqid, server_state.current_index);
+                || request.getPhase1Timestamp() < server_state.largest_accept_ts){
+            phase_one_response = build_phase_one_response(false, server_state.largest_prepare_ts,
+                    -1, request.getPhase1Index());
         } else {
+            int request_to_send;
             server_state.largest_prepare_ts = request.getPhase1Timestamp();
-            phase_one_response = build_phase_one_response(true, 0, server_state.accepted_reqid, server_state.current_index);
+            if(!server_state.isIndexEmpty(request.getPhase1Index()))
+                request_to_send = server_state.getValueFromLog(request.getPhase1Index());
+            else
+                request_to_send = server_state.getUncommitedConsensusAccept(request.getPhase1Index());
+            phase_one_response = build_phase_one_response(true,
+                    request_to_send != -1 ? server_state.largest_accept_ts : -1, request_to_send, request.getPhase1Index());
         }
         responseObserver.onNext(phase_one_response);
         responseObserver.onCompleted();
@@ -51,18 +56,15 @@ public class DadkvsPaxosServiceImpl extends DadkvsPaxosServiceGrpc.DadkvsPaxosSe
         System.out.println("Receive phase two request: " + request);
         DadkvsPaxos.PhaseTwoReply.Builder phase_two_response = DadkvsPaxos.PhaseTwoReply.newBuilder();
         if(request.getPhase2Timestamp() < server_state.largest_prepare_ts
-                || request.getPhase2Timestamp() < server_state.largest_accept_ts
-                || request.getPhase2Index() < server_state.current_index
-                || server_state.checkTransactionProcessed(request.getPhase2Value())){
+                || request.getPhase2Timestamp() < server_state.largest_accept_ts){
             phase_two_response
                     .setPhase2Accepted(false)
-                    .setPhase2Index(server_state.current_index)
-                    .setPhase2Timestamp(server_state.largest_accept_ts)
-                    .setInvalidValue(server_state.checkTransactionProcessed(request.getPhase2Value()));
+                    .setPhase2Index(request.getPhase2Index())
+                    .setPhase2Timestamp(server_state.largest_prepare_ts);
         } else {
             phase_two_response.setPhase2Accepted(true);
             server_state.largest_accept_ts = request.getPhase2Timestamp();
-            server_state.accepted_reqid = request.getPhase2Value();
+            server_state.addAcceptedValue(request.getPhase2Index(), request.getPhase2Value());
             Context forkedContext = Context.current().fork();
             forkedContext.run(() -> {
                 server_state.sendLearnRequests(request.getPhase2Index(), request.getPhase2Value(), request.getPhase2Timestamp());

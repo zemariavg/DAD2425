@@ -39,4 +39,12 @@ public class GenericResponseCollector<T> {
         }
         target_reached = true;
     }
+
+    public int getReceived() {
+        return received;
+    }
+
+    public int getPending() {
+        return pending;
+    }
 }

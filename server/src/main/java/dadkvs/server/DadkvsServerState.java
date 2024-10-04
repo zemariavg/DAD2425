@@ -128,12 +128,13 @@ public class DadkvsServerState {
         boolean reached_consensus = false;
 
         updateIndex();
-        while (!reached_consensus && i_am_leader && getValueFromLog(current_index) == -1) {
-
+        while (!reached_consensus && i_am_leader && isIndexEmpty(current_index)) {
             List<DadkvsPaxos.PhaseOneReply> phase_one_responses = new ArrayList<>();
-            GenericResponseCollector<DadkvsPaxos.PhaseOneReply> phase_one_collector = new GenericResponseCollector<>(phase_one_responses, n_servers);
+            GenericResponseCollector<DadkvsPaxos.PhaseOneReply> phase_one_collector =
+                    new GenericResponseCollector<>(phase_one_responses, n_servers);
             List<DadkvsPaxos.PhaseTwoReply> phase_two_responses = new ArrayList<>();
-            GenericResponseCollector<DadkvsPaxos.PhaseTwoReply> phase_two_collector = new GenericResponseCollector<>(phase_two_responses, n_servers);
+            GenericResponseCollector<DadkvsPaxos.PhaseTwoReply> phase_two_collector =
+                    new GenericResponseCollector<>(phase_two_responses, n_servers);
 
             System.out.println("Queue size in leader: " + request_queue.size());
             phase_one_responses.clear();
@@ -228,7 +229,7 @@ public class DadkvsServerState {
         return transaction_consensus_map.containsKey(reqid);
     }
 
-    public void moveTransactionToLog(int reqId, int index) {
+    public synchronized void moveTransactionToLog(int reqId, int index) {
         System.out.println("Queue size when moving to log: " + request_queue.size());
         moveTransactionToMap(reqId);
         fillTransactionLog(index);
@@ -280,15 +281,18 @@ public class DadkvsServerState {
         leader_ts += (int) Math.ceil((double) (response_ts - leader_ts) / n_servers) * n_servers;
     }
 
-    private void updateLeaderTimestamp() {
-        leader_ts += n_servers;
-    }
-
     public void addTransactionRecordToQueue(Integer reqid, TransactionRecord transactionRecord) {
         RequestQueueEntry request_queue_entry = new RequestQueueEntry(reqid, transactionRecord);
         boolean was_empty = request_queue.isEmpty();
-        if (transaction_consensus_map.containsKey(reqid)) {
-            transaction_consensus_map.get(reqid).setTransactionRecord(transactionRecord);
+        if (transaction_consensus_map.containsKey(reqid) && !transaction_consensus_map.get(reqid).transactionIsAvailable()) {
+            try {
+                execution_lock.lock();
+                System.out.println("Signalling thread waiting for request: " + reqid);
+                transaction_consensus_map.get(reqid).setTransactionRecord(transactionRecord);
+                transaction_execution_conditions.get(reqid).signal();
+            } finally {
+                execution_lock.unlock();
+            }
         } else {
             request_queue.add(request_queue_entry);
             leader_lock.lock();
@@ -340,7 +344,6 @@ public class DadkvsServerState {
 
     public boolean previousTransactionComplete(int index) {
         System.out.println("Checking previous transaction for index: " + index);
-        //System.out.println("Value in index is: " + transaction_execution_log.get(index - 1));
         return index == 0 || transaction_consensus_map.get(transaction_execution_log.get(index - 1)).hasCompleted();
     }
 
@@ -378,7 +381,7 @@ public class DadkvsServerState {
     }
 
     public boolean isIndexEmpty(int index) {
-        return index > transaction_execution_log.size() - 1 || transaction_execution_log.get(index) != null;
+        return index > transaction_execution_log.size() - 1 || transaction_execution_log.get(index) == null;
     }
 
     public void clearAcceptedValue(int index){

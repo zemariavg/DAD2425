@@ -11,8 +11,11 @@ public class DadkvsConsoleServiceImpl extends DadkvsConsoleServiceGrpc.DadkvsCon
 
     DadkvsServerState server_state;
 
-    public DadkvsConsoleServiceImpl(DadkvsServerState state) {
+    DebugHandler debugHandler;
+
+    public DadkvsConsoleServiceImpl(DadkvsServerState state, DebugHandler debugHandler) {
         this.server_state = state;
+        this.debugHandler = debugHandler    ;
     }
 
     @Override
@@ -42,9 +45,12 @@ public class DadkvsConsoleServiceImpl extends DadkvsConsoleServiceGrpc.DadkvsCon
 
         boolean response_value = true;
 
+        if (request.getMode() == 1)
+            System.exit(-1);
+        else if (server_state.debug_mode == 2 && request.getMode() != 2) {
+            debugHandler.wakeUpFrozenRequests();
+        }
         this.server_state.debug_mode = request.getMode();
-
-        // for debug purposes
         System.out.println("Setting debug mode to = " + this.server_state.debug_mode);
 
         // Respond to the client

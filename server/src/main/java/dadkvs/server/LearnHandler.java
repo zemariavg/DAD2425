@@ -23,8 +23,10 @@ public class LearnHandler {
                 learnRequestEntry.increaseCount() == serverState.majority) {
             System.out.println("LEARNER COUNT: " + learnRequestEntry.getCount() + " TIMESTAMP: " + learnRequest.getLearntimestamp());
             if (serverState.isIndexEmpty(index)) {
+                System.out.println("MOVING REQ TO LOG: req-" + reqId + " index- " + index);
                 serverState.moveTransactionToLog(reqId, index);
-                executeTransaction(reqId, index);
+                Thread executionWorker = new Thread(() -> executeTransaction(reqId, index));
+                executionWorker.start();
             }
             serverState.clearAcceptedValue(learnRequest.getLearnindex());
         }
@@ -33,38 +35,40 @@ public class LearnHandler {
 
     //TODO: Refactor code, looks like shit
     private void executeTransaction(int reqId, int index) {
-        serverState.execution_lock.lock();
         System.out.println("Executing transaction for request: " + reqId + ", index: " + index);
-        while (!serverState.transactionAvailable(reqId) || !serverState.previousTransactionComplete(index)) {
-            try {
-                if (!serverState.transaction_execution_conditions.containsKey(index)) {
-                    serverState.transaction_execution_conditions.put(index, serverState.execution_lock.newCondition());
+        try {
+            serverState.execution_lock.lock();
+            while (!serverState.transactionAvailable(reqId) || !serverState.previousTransactionComplete(index)) {
+                try {
+                    if (!serverState.transaction_execution_conditions.containsKey(reqId)) {
+                        serverState.transaction_execution_conditions.put(reqId, serverState.execution_lock.newCondition());
+                    }
+                    serverState.transaction_execution_conditions.get(reqId).await();
+                } catch (InterruptedException e) {
+                    System.out.println("Thread Interrupted");
                 }
-                serverState.transaction_execution_conditions.get(index).await();
-            } catch (InterruptedException e) {
-                System.out.println("Thread Interrupted");
             }
-        }
 
-        if(serverState.checkTransactionCompleted(reqId)) {
+            TransactionLogEntry transactionLogEntry = serverState.getTransactionLogEntry(reqId);
+            TransactionRecord transactionRecord = transactionLogEntry.getTransactionRecord();
+            transactionRecord.setTimestamp(index);
+            boolean commitSuccessful = serverState.store.commit(transactionRecord);
+            if (commitSuccessful) {
+                transactionLogEntry.setCommited();
+            } else {
+                transactionLogEntry.setAborted();
+            }
+            serverState.transaction_execution_conditions.remove(index);
+            serverState.completeClientRequest(reqId, commitSuccessful);
+
+            int nextPendingRequest = serverState.getValueFromLog(index + 1);
+            if (nextPendingRequest != -1 && serverState.transaction_execution_conditions.containsKey(nextPendingRequest))
+                serverState.transaction_execution_conditions.get(nextPendingRequest).signal();
+
+        } finally {
             serverState.execution_lock.unlock();
-            return;
         }
 
-        TransactionLogEntry transactionLogEntry = serverState.getTransactionLogEntry(reqId);
-        TransactionRecord transactionRecord = transactionLogEntry.getTransactionRecord();
-        transactionRecord.setTimestamp(index);
-        boolean commitSuccessful = serverState.store.commit(transactionRecord);
-        if (commitSuccessful) {
-            transactionLogEntry.setCommited();
-        } else {
-            transactionLogEntry.setAborted();
-        }
-        serverState.transaction_execution_conditions.remove(index);
-        serverState.completeClientRequest(reqId, commitSuccessful);
-        if (serverState.transaction_execution_conditions.containsKey(index + 1))
-            serverState.transaction_execution_conditions.get(index + 1).signal();
-        serverState.execution_lock.unlock();
     }
 
 }

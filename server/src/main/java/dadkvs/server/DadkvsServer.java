@@ -38,12 +38,13 @@ public class DadkvsServer {
         int my_id = Integer.valueOf(args[1]);
 
         server_state = new DadkvsServerState(kvsize, base_port, my_id);
+        DebugHandler debugHandler = new DebugHandler();
 
         port = base_port + my_id;
 
-        final BindableService service_impl = new DadkvsMainServiceImpl(server_state);
-        final BindableService console_impl = new DadkvsConsoleServiceImpl(server_state);
-        final BindableService paxos_impl = new DadkvsPaxosServiceImpl(server_state);
+        final BindableService service_impl = new DadkvsMainServiceImpl(server_state, debugHandler);
+        final BindableService console_impl = new DadkvsConsoleServiceImpl(server_state, debugHandler);
+        final BindableService paxos_impl = new DadkvsPaxosServiceImpl(server_state, debugHandler);
 
         // Create a new server to listen on port.
         Server server = ServerBuilder.forPort(port).addService(service_impl).addService(console_impl).addService(paxos_impl).build();

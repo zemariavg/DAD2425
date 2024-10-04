@@ -11,32 +11,19 @@ public class DadkvsMainServiceImpl extends DadkvsMainServiceGrpc.DadkvsMainServi
 
     DadkvsServerState server_state;
 
+    DebugHandler debugHandler;
 
-    public DadkvsMainServiceImpl(DadkvsServerState state) {
+
+    public DadkvsMainServiceImpl(DadkvsServerState state, DebugHandler debugHandler) {
         this.server_state = state;
+        this.debugHandler = debugHandler;
     }
 
     @Override
     public void read(DadkvsMain.ReadRequest request, StreamObserver<DadkvsMain.ReadReply> responseObserver) {
         // for debug purposes
         System.out.println("Receiving read request:" + request);
-        switch (server_state.debug_mode) {
-            case 1:
-                System.out.println("Shutting down server");
-                System.exit(0);
-            case 2:
-                System.out.println("Server is frozen, not processing commit request.");
-                //TODO: Maybe just freeze()
-                return;
-            case 4:
-                try {
-                    long delay = (long) (Math.random() * 1000);  // Random delay up to 1 second
-                    Thread.sleep(delay);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                break;
-        }
+        debugHandler.runDebug(server_state.debug_mode, true);
         int reqid = request.getReqid();
         int key = request.getKey();
         VersionedValue vv = this.server_state.store.read(key);
@@ -52,7 +39,8 @@ public class DadkvsMainServiceImpl extends DadkvsMainServiceGrpc.DadkvsMainServi
     public void committx(DadkvsMain.CommitRequest request, StreamObserver<DadkvsMain.CommitReply> responseObserver) {
         // for debug purposes
         System.out.println("Receiving commit request:" + request);
-
+        debugHandler.runDebug(server_state.debug_mode, true);
+        System.out.println("Running unfrozen...");
         int reqid = request.getReqid();
         int key1 = request.getKey1();
         int version1 = request.getVersion1();
@@ -78,4 +66,5 @@ public class DadkvsMainServiceImpl extends DadkvsMainServiceGrpc.DadkvsMainServi
         });
 
     }
+
 }

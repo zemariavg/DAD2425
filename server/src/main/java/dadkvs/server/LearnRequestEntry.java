@@ -1,7 +1,5 @@
 package dadkvs.server;
 
-import dadkvs.DadkvsPaxos;
-
 public class LearnRequestEntry {
     private final int timestamp;
     private int count;

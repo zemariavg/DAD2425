@@ -124,7 +124,6 @@ public class DadkvsConsoleClient {
                     }
                     break;
                 case "debug":
-                    //System.out.println("debug " + parameter1 + " " + parameter2);
                     if ((parameter1 != null) && (parameter2 != null)) {
                         try {
                             mode = Integer.parseInt(parameter1);

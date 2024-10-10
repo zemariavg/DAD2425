@@ -1,15 +1,11 @@
 package dadkvs.server;
 
-import dadkvs.DadkvsMainServiceGrpc;
-import dadkvs.DadkvsPaxosServiceGrpc;
 import io.grpc.*;
 
 
 public class DadkvsServer {
 
     static DadkvsServerState server_state;
-
-	private static final int n_servers = 5;
 
     /**
      * Server host port.

@@ -233,10 +233,6 @@ public class DadkvsServerState {
         }
     }
 
-    public boolean checkTransactionProcessed(int reqid) {
-        return transaction_consensus_map.containsKey(reqid);
-    }
-
     public synchronized void moveTransactionToLog(int reqId, int index) {
         System.out.println("Queue size when moving to log: " + request_queue.size());
         moveTransactionToMap(reqId);
@@ -357,10 +353,6 @@ public class DadkvsServerState {
 
     public TransactionLogEntry getTransactionLogEntry(int reqId) {
         return transaction_consensus_map.get(reqId);
-    }
-
-    public boolean checkTransactionCompleted(int reqId){
-        return transaction_consensus_map.get(reqId).hasCompleted();
     }
 
     private void initPaxosStubs() {

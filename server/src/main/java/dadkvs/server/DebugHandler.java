@@ -1,12 +1,6 @@
 package dadkvs.server;
 
-import java.util.List;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 public class DebugHandler {
-
-    boolean isClientService;
 
     public DebugHandler() {
     }

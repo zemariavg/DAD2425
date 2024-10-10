@@ -22,33 +22,22 @@ public class LearnHandler {
         } else if (learnRequest.getLearntimestamp() == learnRequestEntry.getTimestamp() &&
                 learnRequestEntry.increaseCount() == serverState.majority) {
             System.out.println("LEARNER COUNT: " + learnRequestEntry.getCount() + " TIMESTAMP: " + learnRequest.getLearntimestamp());
-            if (serverState.isIndexEmpty(index)) {
+            //if (serverState.isIndexEmpty(index)) {
                 System.out.println("MOVING REQ TO LOG: req-" + reqId + " index- " + index);
                 serverState.moveTransactionToLog(reqId, index);
                 Thread executionWorker = new Thread(() -> executeTransaction(reqId, index));
                 executionWorker.start();
-            }
+            //}
             serverState.clearAcceptedValue(learnRequest.getLearnindex());
         }
 
     }
 
-    //TODO: Refactor code, looks like shit
     private void executeTransaction(int reqId, int index) {
         System.out.println("Executing transaction for request: " + reqId + ", index: " + index);
         try {
             serverState.execution_lock.lock();
-            while (!serverState.transactionAvailable(reqId) || !serverState.previousTransactionComplete(index)) {
-                try {
-                    if (!serverState.transaction_execution_conditions.containsKey(reqId)) {
-                        serverState.transaction_execution_conditions.put(reqId, serverState.execution_lock.newCondition());
-                    }
-                    serverState.transaction_execution_conditions.get(reqId).await();
-                } catch (InterruptedException e) {
-                    System.out.println("Thread Interrupted");
-                }
-            }
-
+            verifyExecution(reqId, index);
             TransactionLogEntry transactionLogEntry = serverState.getTransactionLogEntry(reqId);
             TransactionRecord transactionRecord = transactionLogEntry.getTransactionRecord();
             transactionRecord.setTimestamp(index);
@@ -69,6 +58,19 @@ public class LearnHandler {
             serverState.execution_lock.unlock();
         }
 
+    }
+
+    private void verifyExecution(int reqId, int index){
+        while (!serverState.transactionAvailable(reqId) || !serverState.previousTransactionComplete(index)) {
+            try {
+                if (!serverState.transaction_execution_conditions.containsKey(reqId)) {
+                    serverState.transaction_execution_conditions.put(reqId, serverState.execution_lock.newCondition());
+                }
+                serverState.transaction_execution_conditions.get(reqId).await();
+            } catch (InterruptedException e) {
+                System.out.println("Thread Interrupted");
+            }
+        }
     }
 
 }

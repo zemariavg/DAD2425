@@ -15,7 +15,7 @@ public class DadkvsConsoleServiceImpl extends DadkvsConsoleServiceGrpc.DadkvsCon
 
     public DadkvsConsoleServiceImpl(DadkvsServerState state, DebugHandler debugHandler) {
         this.server_state = state;
-        this.debugHandler = debugHandler    ;
+        this.debugHandler = debugHandler;
     }
 
     @Override

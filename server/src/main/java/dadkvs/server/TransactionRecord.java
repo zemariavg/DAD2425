@@ -96,4 +96,8 @@ public class TransactionRecord {
     public void setPrepareValue(int prepare_value) {
         this.prepare_value = prepare_value;
     }
+
+    public boolean isReconfigTransaction(){
+        return read1_key == 0 && read2_key == 0 && prepare_key == 0;
+    }
 }

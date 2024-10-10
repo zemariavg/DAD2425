@@ -23,7 +23,10 @@ public class DadkvsServerState {
     private final ConcurrentLinkedQueue<RequestQueueEntry> request_queue;
     private final ConcurrentHashMap<Integer, CompletableFuture<Boolean>> request_future_map;
     private final ConcurrentHashMap<Integer, TransactionLogEntry> transaction_consensus_map;
+    private final HashMap<Integer, Integer> uncommited_consensus_accepts;
     public final List<Integer> transaction_execution_log;
+    private final ConfigurationHandler configuration_handler;
+    private final Integer[][] configuration_matrix;
     //private final Lock queue_lock;
     private final Condition empty_queue_condition;
     private final Condition i_am_leader_condition;
@@ -44,7 +47,7 @@ public class DadkvsServerState {
     Thread leader_worker;
     DadkvsPaxosServiceGrpc.DadkvsPaxosServiceStub[] async_paxos_stubs;
     String[] paxos_targets;
-    HashMap<Integer, Integer> uncommited_consensus_accepts;
+
 
     public DadkvsServerState(int kv_size, int port, int myself) {
         base_port = port;
@@ -58,6 +61,7 @@ public class DadkvsServerState {
         majority = n_servers / 2 + 1;
         leader_ts = myself + 1;
         current_index = -1;
+
         request_queue = new ConcurrentLinkedQueue<>();
         request_future_map = new ConcurrentHashMap<>();
         transaction_consensus_map = new ConcurrentHashMap<>();
@@ -67,6 +71,9 @@ public class DadkvsServerState {
         empty_queue_condition = leader_lock.newCondition();
         execution_lock = new ReentrantLock();
         transaction_execution_conditions = new HashMap<>();
+        configuration_handler = new ConfigurationHandler(this);
+        configuration_matrix = new Integer[][]{{0, 1, 2}, {1, 2, 3}, {2, 3, 4}};
+
 
         store_size = kv_size;
         store = new KeyValueStore(kv_size);
@@ -128,6 +135,7 @@ public class DadkvsServerState {
         boolean reached_consensus = false;
 
         updateIndex();
+        configuration_handler.loadConfiguration();
         while (!reached_consensus && i_am_leader && isIndexEmpty(current_index)) {
             List<DadkvsPaxos.PhaseOneReply> phase_one_responses = new ArrayList<>();
             GenericResponseCollector<DadkvsPaxos.PhaseOneReply> phase_one_collector =
@@ -156,7 +164,7 @@ public class DadkvsServerState {
                     continue;
                 if (phase_two_responses.size() >= majority) {
                     reached_consensus = true;
-                    moveTransactionToMap(chosen_value);
+                    moveTransactionToLog(chosen_value, current_index);
                 }
             }
         }
@@ -404,6 +412,24 @@ public class DadkvsServerState {
         if(uncommited_consensus_accepts.get(index) == null)
             return -1;
         return uncommited_consensus_accepts.get(index);
+    }
+
+    private boolean isReconfig(int index){
+        int reqId = transaction_execution_log.get(index);
+        return transaction_consensus_map
+                .get(reqId)
+                .getTransactionRecord()
+                .isReconfigTransaction();
+    }
+
+    public void loadConfiguration(){
+        // If we find a request that is completed before we find an incomplete reconfiguration, we can set the current configuration to what is in key 0
+        // else if we find an incomplete reconfiguration, we set the current configuration to the respective configuration
+        /*boolean configSet = false;
+        int i = current_index;
+        while(!configSet){
+            if(previousTransactionComplete(i))
+        }*/
     }
 
 }

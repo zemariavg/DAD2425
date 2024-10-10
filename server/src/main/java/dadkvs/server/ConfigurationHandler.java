@@ -49,4 +49,12 @@ public class ConfigurationHandler {
     public DadkvsPaxosServiceGrpc.DadkvsPaxosServiceStub[] getCurrentConfigStubs(){
         return asyncPaxosStubs;
     }
+
+    public int getCurrentConfig() {
+        return currentConfig;
+    }
+
+    public void setCurrentConfig(int currentConfig) {
+        this.currentConfig = currentConfig;
+    }
 }

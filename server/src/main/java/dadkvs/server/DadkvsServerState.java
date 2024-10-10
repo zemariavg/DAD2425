@@ -418,10 +418,45 @@ public class DadkvsServerState {
         // If we find a request that is completed before we find an incomplete reconfiguration, we can set the current configuration to what is in key 0
         // else if we find an incomplete reconfiguration, we set the current configuration to the respective configuration
         /*boolean configSet = false;
-        int i = current_index;
+        int i = current_index - 1;
         while(!configSet){
-            if(previousTransactionComplete(i))
+            //Get the reqId from this transaction
+            int reqId = transaction_execution_log.get(i);
+            if(previousTransactionComplete(i)){
+                //Set the new configuration, taken from the KeyValueStore
+                configuration_handler.setCurrentConfig(store.read(reqId).getValue());
+                configSet = true;
+            }
+            else if(isReconfig(i)){
+                //Get the configuration from the stop
+                int thisConfig = transaction_consensus_map.get(reqId).getTransactionRecord().getRead1Key();
+                //Set the new configuration
+                configuration_handler.setCurrentConfig(thisConfig);
+                configSet = true;
+            }
+            i--;
         }*/
+
+
+
+        int i = current_index - 1;
+        while(true){
+            //Get the reqId from this transaction
+            int reqId = transaction_execution_log.get(i);
+            if(previousTransactionComplete(i)){
+                //Set the new configuration, taken from the KeyValueStore
+                configuration_handler.setCurrentConfig(store.read(reqId).getValue());
+                break;
+            }
+            else if(isReconfig(i)){
+                //Get the configuration from the stop
+                int thisConfig = transaction_consensus_map.get(reqId).getTransactionRecord().getRead1Key();
+                //Set the new configuration
+                configuration_handler.setCurrentConfig(thisConfig);
+                break;
+            }
+            i--;
+        }
     }
 
 }
